@@ -21,7 +21,7 @@ export default {
             filter: 'standard',
             materials: {},
             selected_texture: 'video',
-            textures: {video: null, webcam: null},
+            textures: { video: null, webcam: null },
             start_stop: 'Stop'
         }
     },
@@ -29,7 +29,7 @@ export default {
         createShaderMaterial(shader, scene) {
             let material = new ShaderMaterial(shader, scene, BASE_URL + 'shaders/' + shader, {
                 attributes: ['position', 'uv'],
-                uniforms: ['worldViewProjection'],
+                uniforms: ['worldViewProjection', 'time'],
                 samplers: ['image']
             });
             material.backFaceCulling = false;
@@ -51,7 +51,7 @@ export default {
                 if (this.textures.webcam === null && this.start_stop === 'Stop') {
                     VideoTexture.CreateFromWebCam(this.scene, (texture) => {
                         this.textures.webcam = texture;
-                    }, {width: {ideal: 1280}, height: {ideal: 720}}, false, false);
+                    }, { width: { ideal: 1280 }, height: { ideal: 720 } }, false, false);
                 }
             }
             else {
@@ -82,7 +82,7 @@ export default {
                     VideoTexture.CreateFromWebCam(this.scene, (texture) => {
                         console.log('here', texture);
                         this.textures.webcam = texture;
-                    }, {width: {ideal: 1280}, height: {ideal: 720}}, false, false);
+                    }, { width: { ideal: 1280 }, height: { ideal: 720 } }, false, false);
                 }
             }
             else {
@@ -100,6 +100,11 @@ export default {
                     this.textures.webcam = null;
                 }
             }
+        },
+
+        setFloat(timeValue) {
+            this.material.time = timeValue;
+            console.log(this.material.time);
         }
     },
     mounted() {
@@ -110,7 +115,7 @@ export default {
 
         // Register callbacks for selecting filters
         let filters = document.getElementsByClassName('filter_button');
-        for(let i = 0; i < filters.length; i++) {
+        for (let i = 0; i < filters.length; i++) {
             filters[i].addEventListener('click', this.selectFilter, false);
         }
         this.filter_button = document.getElementById('standard_button');
@@ -143,10 +148,11 @@ export default {
         this.materials.custom = this.createShaderMaterial('custom', this.scene);
 
         // Create video textures
-        this.textures.video = new VideoTexture('video', BASE_URL + 'videos/dm_vector.mp4', this.scene, false,
-                                               false, VideoTexture.BILINEAR_SAMPLINGMODE, 
-                                               {autoUpdateTexture: true, autoPlay: true, loop: true, muted: true});
-
+        this.textures.video = new VideoTexture('video', BASE_URL + 'videos/sidearm-steak.mp4', this.scene, false,
+            false, VideoTexture.BILINEAR_SAMPLINGMODE,
+            { autoUpdateTexture: true, autoPlay: true, loop: true, muted: true });
+        //'videos/dm_vector.mp4'
+        //'videos/sidearm-steak.mp4'
         this.materials.standard.setTexture('image', this.textures.video);
         this.materials.blackwhite.setTexture('image', this.textures.video);
         this.materials.fisheye.setTexture('image', this.textures.video);
@@ -157,10 +163,10 @@ export default {
         // Create simple rectangle model
         let rect = new Mesh('rect', this.scene);
         let vertex_positions = [
-            -1.0, -1.0,  0.0, // vertex 0 (x,y,z)
-             1.0, -1.0,  0.0, // vertex 1 (x,y,z)
-             1.0,  1.0,  0.0, // vertex 2 (x,y,z)
-            -1.0,  1.0,  0.0  // vertex 3 (x,y,z)
+            -1.0, -1.0, 0.0, // vertex 0 (x,y,z)
+            1.0, -1.0, 0.0, // vertex 1 (x,y,z)
+            1.0, 1.0, 0.0, // vertex 2 (x,y,z)
+            -1.0, 1.0, 0.0  // vertex 3 (x,y,z)
         ];
         let vertex_texcoords = [
             0.0, 0.0, // vertex 0 (u,v)
@@ -190,6 +196,13 @@ export default {
             if (this.textures[this.selected_texture] !== null) {
                 this.materials[this.filter].setTexture('image', this.textures[this.selected_texture]);
             }
+
+            // set the time uniform for ripple effect. 
+            if (this.textures[this.selected_texture === 'ripple']) {
+                let today = new Date();
+                let timeVal = today.getHours() + ":" + today.getMinutes() + ":" + today.getSeconds();
+                this.materials[this.filter].setFloat('time', timeVal);
+            }
         });
 
         // Render every frame
@@ -203,7 +216,7 @@ export default {
 <template>
     <h1>WebGL Fragment Shader Fun!</h1>
     <canvas id="renderCanvas" touch-action="none"></canvas>
-    <br/>
+    <br />
     <div class="spacer"></div>
     <div id="gui">
         <div id="standard_button" class="filter_button" selected="true">
@@ -254,7 +267,8 @@ h1 {
     font-style: normal;
 }
 
-p, label {
+p,
+label {
     font-size: 0.875rem;
 }
 
@@ -320,8 +334,8 @@ input {
     width: 3.5rem;
     height: 1.5rem;
 }
-  
-.switch input { 
+
+.switch input {
     opacity: 0;
     width: 0;
     height: 0;
@@ -338,7 +352,7 @@ input {
     -webkit-transition: .4s;
     transition: .4s;
 }
-  
+
 .slider:before {
     position: absolute;
     content: "";
@@ -350,26 +364,26 @@ input {
     -webkit-transition: 0.4s;
     transition: 0.4s;
 }
-  
-input:checked + .slider {
+
+input:checked+.slider {
     background-color: #2196F3;
 }
-  
-input:focus + .slider {
+
+input:focus+.slider {
     box-shadow: 0 0 1px #2196F3;
 }
-  
-input:checked + .slider:before {
+
+input:checked+.slider:before {
     -webkit-transform: translateX(2rem);
     -ms-transform: translateX(2rem);
     transform: translateX(2rem);
 }
-  
+
 /* Rounded sliders */
 .slider.round {
     border-radius: 1.1rem;
 }
-  
+
 .slider.round:before {
     border-radius: 50%;
 }
